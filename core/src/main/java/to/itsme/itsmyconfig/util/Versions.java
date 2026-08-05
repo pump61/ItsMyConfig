@@ -16,7 +16,18 @@ public final class Versions {
         final String[] versions = VERSION_EXACT.split("\\.");
         MAJOR = Integer.parseInt(versions[0]);
         MINOR = Integer.parseInt(versions[1]);
-        PATCH = versions.length > 2 ? Integer.parseInt(versions[2]) : 0;
+        PATCH = versions.length > 2 ? parsePatch(versions[2]) : 0;
+    }
+
+    private static int parsePatch(final String value) {
+        // Some server builds report a non-numeric third segment here
+        // (e.g. "26.2.build.92-stable" -> "build"), which isn't a real
+        // patch number - fall back to 0 instead of failing to parse.
+        try {
+            return Integer.parseInt(value);
+        } catch (final NumberFormatException e) {
+            return 0;
+        }
     }
 
     public static boolean is(final int major, final int minor, final int patch) {
