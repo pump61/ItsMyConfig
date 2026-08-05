@@ -60,7 +60,7 @@ dependencies {
     implementation "com.github.Redempt:Crunch:2.0.3"
     implementation "com.github.technicallycoded:FoliaLib:0.4.3"
     implementation "com.alessiodp.libby:libby-bukkit:2.0.0-SNAPSHOT"
-	implementation "com.github.retrooper:packetevents-spigot:2.12.1"
+	implementation "com.github.retrooper:packetevents-spigot:2.13.0"
 
     compileOnly "io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT"
     compileOnly "org.apache.logging.log4j:log4j-core:2.17.1"
@@ -105,6 +105,23 @@ processResources {
 
 def shadePath = "to.itsme.itsmyconfig.shade."
 shadowJar {
+    // packetevents-spigot is itself a standalone Bukkit plugin and ships its own
+    // plugin.yml (name: packetevents). Shadow merges dependency resources after
+    // this project's own output by default, so that copy was silently winning
+    // over - and discarding - ItsMyConfig's own plugin.yml, which Paper then
+    // reported as "Ambiguous plugin name 'packetevents'" against the real
+    // standalone packetevents-spigot jar (and would have broken plugin loading
+    // entirely, since the wrong descriptor/main-class would have been used).
+    // Same fix as the patched Imperat Version class below: re-add this
+    // project's own copy last so it wins the duplicate, instead of a top-level
+    // exclude (which cascades into and also strips the re-added copy, since
+    // child CopySpecs inherit the parent's exclude patterns).
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    from(sourceSets.main.output) {
+        include 'dev/velix/imperat/Version.class'
+        include 'plugin.yml'
+    }
+
     relocate("com.tcoded.folialib", "${shadePath}folialib")
     relocate("redempt.crunch", "${shadePath}crunch")
     relocate("dev.velix.imperat", "${shadePath}imperat")
